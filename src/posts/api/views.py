@@ -35,7 +35,7 @@ class PostCreateAPIView(CreateAPIView):
 class PostListAPIView(ListAPIView):
     # queryset = Post.objects.all()
     serializer_class = PostListSerializer
-    filter_backends = [SearchFilter]
+    filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['title', 'content', 'user__first_name']
     permission_classes = [AllowAny]
 
