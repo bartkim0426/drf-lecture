@@ -18,6 +18,7 @@ from rest_framework.permissions import (
     IsAdminUser,
     IsAuthenticatedOrReadOnly,
 )
+from django_filters.rest_framework import DjangoFilterBackend
 
 from posts.models import Post
 from .serializers import PostListSerializer, PostDetailSerializer, PostCreateUpdateSerializer
@@ -35,8 +36,14 @@ class PostCreateAPIView(CreateAPIView):
 class PostListAPIView(ListAPIView):
     # queryset = Post.objects.all()
     serializer_class = PostListSerializer
-    filter_backends = [SearchFilter, OrderingFilter]
+    # filter_backends = [SearchFilter, OrderingFilter]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['title', 'content', 'user__first_name']
+    filter_fields = ['title', 'user', 'id']
+    # ordering_fields = ['id', 'title', 'publish']
+    ordering_fields = '__all__'
+    ordering = ('publish',)
     permission_classes = [AllowAny]
 
     def get_queryset(self, *args, **kwargs):

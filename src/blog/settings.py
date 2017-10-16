@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'posts',
 
     'rest_framework',
-
+    'django_filters',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
@@ -145,15 +145,6 @@ STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static_cdn")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "media_cdn")
 
-
-
-
-
-
-
-
-
-
-
-
-
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
+}
