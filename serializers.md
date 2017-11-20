@@ -576,224 +576,181 @@ class SpeechHyperlinkSerializers(serializers.HyperlinkedModelSerializer):
 
 HyperlinkedModelSerializer를 instantiating 할때는 현재 request를 포함해줘야한다. 이렇게
 
- 
-
+```python
 serializer = AccountSerializer(queryset, context={'request': request})
+```
+
 => 그래야 현재 적합한 hostname을 포함해서 fully qualified URL을 생성해줌
 
-만약 relative URL (/accounts/1)을 쓰고 싶다면 {'request': None}으로 쓰면 됨
+만약 relative URL (`/accounts/1`)을 쓰고 싶다면 `{'request': None}`으로 쓰면 됨
 
-1. How hyperlinked views are determined
+## 2. [How hyperlinked views are determined](http://www.django-rest-framework.org/api-guide/serializers/#how-hyperlinked-views-are-determined)
 
 model instance에 하이퍼링킹 될 때 사용되는 view를 결정해줌
 
-default: {model_name}-detail view를 사용 (pk를 kwargs로 받아서)
+default: `{model_name}-detail` view를 사용 (pk를 kwargs로 받아서)
 
-이를 view name이나 lookup-field 를 사용해서 override 가능: extra_kwargs로 추가해주면 됨, 혹은 HyperlinkedIdentityField 로 명시 가능
+이를 view name이나 lookup-field 를 사용해서 override 가능: `extra_kwargs`로 추가해주면 됨, 혹은 `HyperlinkedIdentityField` 로 명시 가능
 
- 
-
+```python
 # hyperlinkModelSerializer
-
 class SpeechHyperlinkSerializers(serializers.HyperlinkedModelSerializer):
-
-```
-# HyperlinkedIdentityField로 view를 지정
-# url = serializers.HyperlinkedIdentityField(
-    # view_name="speech:detail",
-    # lookup_field="pk",
-# )
-class Meta:
-    model = Speech
-    fields = (
-        'url',
-        'id',
-        'lecture_date',
-        'memo',
-    )
-    # 혹은 extra_kwargs로 view_name, lookup field 지정 가능
-    # 복잡한 경우 이렇게 사용하면 좋을듯
-    extra_kwargs = {
-        'url': {
-            'view_name': 'speech:detail',
-            'lookup_field': 'pk',
+    # HyperlinkedIdentityField로 view를 지정
+    # url = serializers.HyperlinkedIdentityField(
+        # view_name="speech:detail",
+        # lookup_field="pk",
+    # )
+    class Meta:
+        model = Speech
+        fields = (
+            'url',
+            'id',
+            'lecture_date',
+            'memo',
+        )
+        # 혹은 extra_kwargs로 view_name, lookup field 지정 가능
+        # 복잡한 경우 이렇게 사용하면 좋을듯
+        extra_kwargs = {
+            'url': {
+                'view_name': 'speech:detail',
+                'lookup_field': 'pk',
+            }
         }
-    }
 ```
 
-Tip: url conf와 매칭하는게 종종 복잡할 때가 있는데 그럴때는 HyperlinkedModelSerializer 인스턴스의 repr을 print 해보면 명확하게 확인이 가능하다.
+>  Tip: url conf와 매칭하는게 종종 복잡할 때가 있는데 그럴때는 `HyperlinkedModelSerializer` 인스턴스의 `repr`을 print 해보면 명확하게 확인이 가능하다.
 
- 
-
+```python
 In [1]: from speech.api.serializers import SpeechHyperlinkSerializers
 In [2]: sr = SpeechHyperlinkSerializers()
 In [5]: print(repr(sr))
-
 # SpeechHyperlinkSerializers():
-
 # url = HyperlinkedIdentityField(lookup_field='pk', view_name='speech:detail')
-
 # id = IntegerField(label='ID', read_only=True)
-
 # lecture_date = DateField(label='날짜')
-
 # memo = CharField(allow_blank=True, allow_null=True, label='메모', max_length=128, required=False)
+```
 
-1. Changing the URL field name
+## 3. [Changing the URL field name](http://www.django-rest-framework.org/api-guide/serializers/#changing-the-url-field-name)
 
-URL field의 이름은 기본으로 'url'. setting에서 URL_FIELD_NAME을 통해 전역으로 override 가능
+URL field의 이름은 기본으로 'url'. setting에서 `URL_FIELD_NAME`을 통해 전역으로 override 가능
 
-ListSerializer
+
+
+------
+
+# [ListSerializer](http://www.django-rest-framework.org/api-guide/serializers/#listserializer)
+
 multiple object들을 한 번에 serializing, validating 가능하게 해줌.
 
-보통은 ListSerializer를 사용하지 않고 일반 serializer에서 many=True를 사용
+보통은 `ListSerializer`를 사용하지 않고 일반 serializer에서 `many=True`를 사용
 
-many=True를 사용하면 ListSerializer 인스턴스가 생성됨. 즉, many=True일 경우나 ListSerializer를 사용할 경우나 모두 아래 속성들 사용 가능
+`many=True`를 사용하면 `ListSerializer` 인스턴스가 생성됨. 즉, `many=True`일 경우나 `ListSerializer`를 사용할 경우나 모두 아래 속성들 사용 가능
 
-allow_empty
+`allow_empty`
 
 default로 True , False로 해놓을시 empty list 허용 안됨. 
 
-1. Customizing ListSerializer behavior
+### 1. [Customizing `ListSerializer` behavior](http://www.django-rest-framework.org/api-guide/serializers/#customizing-listserializer-behavior)
 
-ListSerializer를 customize할 few case가 있음, 예를들면
+`ListSerializer`를 customize할 few case가 있음, 예를들면
 
-list에 대한 특정 validation을 하고싶을 때 (리스트 내의 element가 다른 element와 충돌하지 않는다는 등)
+- list에 대한 특정 validation을 하고싶을 때 (리스트 내의 element가 다른 element와 충돌하지 않는다는 등)
+- multiple object에 대해 `create`, `update`를 customize 하고싶을 때
 
-multiple object에 대해 create, update를 customize 하고싶을 때
+이런 상황에서는 `Meta` 클래스에 `list_serializer_class` 옵션을 따로 주면 `many=True`가 있는 것들에 사용됨
 
-이런 상황에서는 Meta 클래스에 list_serializer_class 옵션을 따로 주면 many=True가 있는 것들에 사용됨
-
- 
-
+```python
 class CustomListSerializer(serializers.ListSerializer):
+    ...
 
-```
-...
-```
-
-​
 class CustomSerializer(serializers.Serializer):
-
-```
-...
-class Meta:
-    list_serializer_class = CustomListSerializer
+    ...
+    class Meta:
+        list_serializer_class = CustomListSerializer
 ```
 
-customizing multiple create
+- customizing multiple create
 
-default로 multiple object creation일 경우에도 각각의 리스트 아이템에 .create()가 호출됨
+default로 multiple object creation일 경우에도 각각의 리스트 아이템에 `.create()`가 호출됨
 
-이를 customize 하기 위해서는 ListSerializer 클래스 내의 create()를 커스터마이징 해야함
+이를 customize 하기 위해서는 `ListSerializer` 클래스 내의 `create()`를 커스터마이징 해야함
 
-예를들면
+예를들면 
 
- 
-
+```python
 class BookListSerializer(serializers.ListSerializer):
+    def create(self, validated_data):
+        books = [Book(**item) for item in validated_data]
+        return Book.objects.bulk_create(books)
 
-```
-def create(self, validated_data):
-    books = [Book(**item) for item in validated_data]
-    return Book.objects.bulk_create(books)
-```
-
-​
 class BookSerializer(serializers.Serializer):
-
-```
-...
-class Meta:
-    list_serializer_class = BookListSerializer
+    ...
+    class Meta:
+        list_serializer_class = BookListSerializer
 ```
 
-customizing multiple update
 
-default로 ListSerializer 클래스는 multiple update를 지원하지 않음. deletion, insertion에 대항 행동들이 모호하기 때문
+
+- customizing multiple update
+
+default로 `ListSerializer` 클래스는 multiple update를 지원하지 않음. `deletion`, `insertion`에 대항 행동들이 모호하기 때문
 
 이를 지원하기 위해서는 so explicitly 하게 사용해야함. 다음을 확실히 하고 사용할것
 
-How do you determine which instance should be updated for each item in the list of data?
+1. How do you determine which instance should be updated for each item in the list of data?
+2. How should insertions be handled? Are they invalid, or do they create new objects?
+3. How should removals be handled? Do they imply object deletion, or removing a relationship? Should they be silently ignored, or are they invalid?
+4. How should ordering be handled? Does changing the position of two items imply any state change or is it ignored?
 
-How should insertions be handled? Are they invalid, or do they create new objects?
-
-How should removals be handled? Do they imply object deletion, or removing a relationship? Should they be silently ignored, or are they invalid?
-
-How should ordering be handled? Does changing the position of two items imply any state change or is it ignored?
-
-= > serializer 인스턴스에 id 필드를 명시적으로 추가해줘야함. 기본적으로 id필드는 read_only인데, 이는 update될 때 removed됨. 명시적으로 선언이 되면 update 메소드에서 사용 가능
+= > serializer 인스턴스에 `id` 필드를 명시적으로 추가해줘야함. 기본적으로 `id`필드는 `read_only`인데, 이는 `update`될 때 removed됨. 명시적으로 선언이 되면 `update` 메소드에서 사용 가능
 
 예시 (실제로 update를 이런식으로 사용할 일이 있을지는 의문. 추후 필요할 때 보고 사용하면 될듯)
 
- 
-
+```python
 class BookListSerializer(serializers.ListSerializer):
+    def update(self, instance, validated_data):
+        # Maps for id->instance and id->data item.
+        book_mapping = {book.id: book for book in instance}
+        data_mapping = {item['id']: item for item in validated_data}
 
-```
-def update(self, instance, validated_data):
-    # Maps for id->instance and id->data item.
-    book_mapping = {book.id: book for book in instance}
-    data_mapping = {item['id']: item for item in validated_data}
-```
+        # Perform creations and updates.
+        ret = []
+        for book_id, data in data_mapping.items():
+            book = book_mapping.get(book_id, None)
+            if book is None:
+                ret.append(self.child.create(data))
+            else:
+                ret.append(self.child.update(book, data))
 
-​
+        # Perform deletions.
+        for book_id, book in book_mapping.items():
+            if book_id not in data_mapping:
+                book.delete()
 
-```
-    # Perform creations and updates.
-    ret = []
-    for book_id, data in data_mapping.items():
-        book = book_mapping.get(book_id, None)
-        if book is None:
-            ret.append(self.child.create(data))
-        else:
-            ret.append(self.child.update(book, data))
-```
+        return ret
 
-​
-
-```
-    # Perform deletions.
-    for book_id, book in book_mapping.items():
-        if book_id not in data_mapping:
-            book.delete()
-```
-
-​
-
-```
-    return ret
-```
-
-​
 class BookSerializer(serializers.Serializer):
+    # We need to identify elements in the list using their primary key,
+    # so use a writable field here, rather than the default which would be read-only.
+    id = serializers.IntegerField()
+    ...
 
-```
-# We need to identify elements in the list using their primary key,
-# so use a writable field here, rather than the default which would be read-only.
-id = serializers.IntegerField()
-...
-```
-
-​
-
-```
-class Meta:
-    list_serializer_class = BookListSerializer
+    class Meta:
+        list_serializer_class = BookListSerializer
 ```
 
-multiple update opreation을 도와주는 third party package가 있다고 함  (REST 2버전의 allow_add_remove와 비슷한것)
-Customizing ListSerializer initialization
+multiple update opreation을 도와주는 third party package가 있다고 함  (REST 2버전의 `allow_add_remove`와 비슷한것)
 
-many=True일때, Serializer, ListSerializer 클래스에 어떤 args나 kwargs가 .__init__() 메소드에 사용되는지 결정해야함
+- Customizing ListSerializer initialization
 
-default는 validators와 custom kwargs 를 제외하고는 모두 사용됨. 
+`many=True`일때, `Serializer`, `ListSerializer` 클래스에 어떤 args나 kwargs가 `.__init__()` 메소드에 사용되는지 결정해야함
 
-(무슨말인지 잘 모르겠음.)
+default는 `validators`와 custom kwargs 를 제외하고는 모두 사용됨. 
 
- 
+(무슨말인지 잘 모르겠음.) 
 
-```
+```Python
 @classmethod
 def many_init(cls, *args, **kwargs):
     # Instantiate the child serializer.
@@ -802,280 +759,275 @@ def many_init(cls, *args, **kwargs):
     return CustomListSerializer(*args, **kwargs)
 ```
 
-BaseSerializer
-(Serializer, ModelSerializer를 사용하지 않고 실제로 BaseSerializer를 사용하여 Serializer를 만드는 경우가 있는지 궁금. )
 
-Serializer 클래스와 비슷한 basic API를 가짐
 
-`.data - Returns the outgoing primitive representation.
 
-.is_valid() - Deserializes and validates incoming data.
 
-.validated_data - Returns the validated incoming data.
+# [BaseSerializer](http://www.django-rest-framework.org/api-guide/serializers/#baseserializer)
 
-.errors - Returns any errors during validation.
+(`Serializer`, `ModelSerializer`를 사용하지 않고 실제로 `BaseSerializer`를 사용하여 Serializer를 만드는 경우가 있는지 궁금. )
 
-.save() - Persists the validated data into an object instance.
+`Serializer` 클래스와 비슷한 basic API를 가짐
+
+- `.data` - Returns the outgoing primitive representation.
+- `.is_valid()` - Deserializes and validates incoming data.
+- `.validated_data` - Returns the validated incoming data.
+- `.errors` - Returns any errors during validation.
+- `.save()` - Persists the validated data into an object instance.
 
 serializer class가 지원하길 원하는 기능들을 override 가능
 
-.to_representation() - read operation을 위한 serialization 지원
+- `.to_representation()` - read operation을 위한 serialization 지원
+- `.to_internal_value()` - write operation을 위한 serialization 지원
+- `.create() `and `.update()` 
 
-.to_internal_value() - write operation을 위한 serialization 지원
+=> `Serializer` 클래스와 같은 인터페이스, 일반 `Serializer` 나 `ModelSerializer`와 동일하게 사용 가능. 
 
-.create() and .update() 
+다른 점은 `BaseSerializer`는 browsable API 내의 HTML form을 만들어주지 않음
 
-=> Serializer 클래스와 같은 인터페이스, 일반 Serializer 나 ModelSerializer와 동일하게 사용 가능. 
+이외 read-only, read-write BaseSerializer 클래스나 새로운 `BaseSerializer`의 예시는 필요에 따라 drf 공식문서 를 참고해서 만들면 될듯
 
-다른 점은 BaseSerializer는 browsable API 내의 HTML form을 만들어주지 않음
 
-이외 read-only, read-write BaseSerializer 클래스나 새로운 BaseSerializer의 예시는 drf 공식문서 를 참고해서 만들면 될듯
 
-Advanced serializer usage
 
-1. Overriding serialization and deserialization behavior
 
-serialization, deserialization 를 대체해야 할 일이 있을 때 .to_representation()이나 to_internal_value() 메소드를 overriding 가능. 
+# [Advanced serializer usage](http://www.django-rest-framework.org/api-guide/serializers/#advanced-serializer-usage)
+
+## 1. [Overriding serialization and deserialization behavior](http://www.django-rest-framework.org/api-guide/serializers/#overriding-serialization-and-deserialization-behavior)
+
+serialization, deserialization 를 대체해야 할 일이 있을 때 `.to_representation()`이나 `to_internal_value()` 메소드를 overriding 가능. 
 
 이럴때 유용하다
 
-새로운 serializer base 클래스에 새로운 behavior를 추가
+- 새로운 serializer base 클래스에 새로운 behavior를 추가
+- 존재하는 class의 behavior를 살짝 바꿀 때
+- 많은 양의 데이터를 호출하고 자주 접속되는 API endpoint의 serialization 퍼포먼스 향상
 
-존재하는 class의 behavior를 살짝 바꿀 때
-
-많은 양의 데이터를 호출하고 자주 접속되는 API endpoint의 serialization 퍼포먼스 향상
-
-.to_representation(self, obj)
+**`.to_representation(self, obj)`**
 
 => serialization에 필요한 object instance를 받아서 primitive representation을 리턴. (통상적으로 이는 built-in 파이썬 데이터타입) 
 
 drf의 기본 Serializer에는 이렇게 정의
 
- 
+```python
+    def to_representation(self, instance):
+        """
+        Object instance -> Dict of primitive datatypes.
+        """
+        ret = OrderedDict()
+        fields = self._readable_fields
 
-```
-def to_representation(self, instance):
-    """
-    Object instance -> Dict of primitive datatypes.
-    """
-    ret = OrderedDict()
-    fields = self._readable_fields
-```
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
 
-​
+            # We skip `to_representation` for `None` values so that fields do
+            # not have to explicitly deal with that case.
+            #
+            # For related fields with `use_pk_only_optimization` we need to
+            # resolve the pk value.
+            check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            if check_for_none is None:
+                ret[field.field_name] = None
+            else:
+                ret[field.field_name] = field.to_representation(attribute)
 
-```
-    for field in fields:
-        try:
-            attribute = field.get_attribute(instance)
-        except SkipField:
-            continue
-```
-
-​
-
-```
-        # We skip `to_representation` for `None` values so that fields do
-        # not have to explicitly deal with that case.
-        #
-        # For related fields with `use_pk_only_optimization` we need to
-        # resolve the pk value.
-        check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
-        if check_for_none is None:
-            ret[field.field_name] = None
-        else:
-            ret[field.field_name] = field.to_representation(attribute)
+        return ret
 ```
 
-​
+**`.to_internal_value(self, data)`**
 
+unvalidated data를 인풋으로 받아서 `serializer.validated_data`로 사용 가능한 validated data를 리턴함
+
+만약 `save()`가 호출되면 이 리턴된 value가 `create()`, `update()` method에도 사용
+
+validation이 실패하면, `serializers.ValidationError(errors)` 발생. deserialization behavior을 변경할 필요가 없거나 object-level의 validation을 제공하고 싶으면 그냥 `validate()` 메쏘드를 override 하길 추천
+
+기본 drf 코드
+
+```python
+    def to_internal_value(self, data):
+        """
+        Dict of native values <- Dict of primitive datatypes.
+        """
+        if not isinstance(data, Mapping):
+            message = self.error_messages['invalid'].format(
+                datatype=type(data).__name__
+            )
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: [message]
+            }, code='invalid')
+
+        ret = OrderedDict()
+        errors = OrderedDict()
+        fields = self._writable_fields
+
+        for field in fields:
+            validate_method = getattr(self, 'validate_' + field.field_name, None)
+            primitive_value = field.get_value(data)
+            try:
+                validated_value = field.run_validation(primitive_value)
+                if validate_method is not None:
+                    validated_value = validate_method(validated_value)
+            except ValidationError as exc:
+                errors[field.field_name] = exc.detail
+            except DjangoValidationError as exc:
+                errors[field.field_name] = get_error_detail(exc)
+            except SkipField:
+                pass
+            else:
+                set_value(ret, field.source_attrs, validated_value)
+
+        if errors:
+            raise ValidationError(errors)
+
+        return ret
 ```
-    return ret
-```
 
-.to_internal_value(self, data)
+## 2. [Serializer Inheritance](http://www.django-rest-framework.org/api-guide/serializers/#serializer-inheritance)
 
-unvalidated data를 인풋으로 받아서 serializer.validated_data로 사용 가능한 validated data를 리턴함
+장고 폼과 비슷하게, `serializer`도 상속 가능. 
 
-만약 save()가 호출되면 이 리턴된 value가 create(), update() method에도 사용
-
-validation이 실패하면, serializers.ValidationError(errors) 발생. deserialization behavior을 변경할 필요가 없거나 object-level의 validation을 제공하고 싶으면 그냥 validate() 메쏘드를 override 하길 추천
-
-1. Serializer Inheritance
-
-장고 폼과 비슷하게, serializer도 상속 가능. 
-
- 
-
+```python
 class MyBaseSerializer(Serializer):
+    my_field = serializers.CharField()
 
-```
-my_field = serializers.CharField()
-```
+    def validate_my_field(self):
+        ...
 
-​
-
-```
-def validate_my_field(self):
+class MySerializer(MyBaseSerializer):
     ...
 ```
 
-​
-class MySerializer(MyBaseSerializer):
+장고 모델, 모델폼과 같이 `Meta` 클래스는 명시적으로 상속되지 않는다. 상속하고 싶다면 명시해야함  i.e. 
 
-```
-...
-```
-
-장고 모델, 모델폼과 같이 Meta 클래스는 명시적으로 상속되지 않는다. 상속하고 싶다면 명시해야함  i.e.
-
- 
-
+```python
 class AccountSerializer(MyBaseSerializer):
-
-```
-class Meta(MyBaseSerializer.Meta):
-    model = Account
+    class Meta(MyBaseSerializer.Meta):
+        model = Account
 ```
 
-=> drf 공식 문서에서는 Meta 클래스를 상속하지 않는걸 추천. 대신 모든 option을 명시적으로 쓸것
+=> drf 공식 문서에서는 `Meta` 클래스를 상속하지 않는걸 추천. 대신 모든 option을 명시적으로 쓸것
 
 또한 serializer 상속에 몇가지 주의사항
 
-일반적인 python name resolution rule 적용: 여러 배이스 클래스에 Meta 클래스를 추가하면 하나만 사용됨. child의 Meta가 있다면 그걸 사용, 없다면 첫번째 parent의 Meta 사용
+- 일반적인 python name resolution rule 적용: 여러 배이스 클래스에 `Meta` 클래스를 추가하면 하나만 사용됨. child의 `Meta`가 있다면 그걸 사용, 없다면 첫번째 parent의 `Meta` 사용
 
-Field를 None으로 정의하여 상속받은 부모 클라스의 필드를 없앨 수 있음
+- `Field`를 `None`으로 정의하여 상속받은 부모 클라스의 필드를 없앨 수 있음`
 
- 
+  ```python
+  class MyBaseSerializer(ModelSerializer):
+      my_field = serializers.CharField()
 
-class MyBaseSerializer(ModelSerializer):
+  class MySerializer(MyBaseSerializer):
+      my_field = None
+  ```
 
-```
-my_field = serializers.CharField()
-```
+  => 하지만 그냥 opt-out 방식을 사용할수 있음 (`fields`, `exclude`)
 
-​
-class MySerializer(MyBaseSerializer):
+## 3. [Dynamically modifying fields](http://www.django-rest-framework.org/api-guide/serializers/#dynamically-modifying-fields)
 
-```
-my_field = None
-```
-
-하지만 그냥 opt-out 방식을 사용할수 있음 (fields, exclude)
-
-1. Dynamically modifying fields
-
-serializer가 생상되면 .fields 속성으로 fields dictionary에 접근 가능하다. 
+serializer가 생상되면 `.fields` 속성으로 fields dictionary에 접근 가능하다. 
 
 이 fields arg를 수정함으로써 serializer를 선언할 때가 아닌, runtime에서 serializer args를 수정 가능
 
 예시 - initializing 할 때 어떤 필드가 세팅 되는지를 세팅 가능
 
- 
-
+```Python
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
 
-```
-"""
-A ModelSerializer that takes an additional `fields` argument that
-controls which fields should be displayed.
-"""
-```
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
 
-​
+        # Instantiate the superclass normally
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
 
-```
-def __init__(self, *args, **kwargs):
-    # Don't pass the 'fields' arg up to the superclass
-    fields = kwargs.pop('fields', None)
-```
-
-​
-
-```
-    # Instantiate the superclass normally
-    super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
 ```
 
-​
+ 다음과 같이 initializing 할 때 세팅할 필드를 추가 가능
 
+```python
+>>> class UserSerializer(DynamicFieldsModelSerializer):
+>>>     class Meta:
+>>>         model = User
+>>>         fields = ('id', 'username', 'email')
+>>>
+>>> print UserSerializer(user)
+{'id': 2, 'username': 'jonwatts', 'email': 'jon@example.com'}
+>>>
+>>> print UserSerializer(user, fields=('id', 'email'))
+{'id': 2, 'email': 'jon@example.com'}
 ```
-    if fields is not None:
-        # Drop any fields that are not specified in the `fields` argument.
-        allowed = set(fields)
-        existing = set(self.fields.keys())
-        for field_name in existing - allowed:
-            self.fields.pop(field_name)
-```
 
-다음과 같이 initializing 할 때 세팅할 필드를 추가 가능
 
- 
 
-> > > class UserSerializer(DynamicFieldsModelSerializer):
-> > >
-> > > ```
-> > > class Meta:
-> > >     model = User
-> > >     fields = ('id', 'username', 'email')
-> > > ```
-> > >
-> > > print UserSerializer(user)
-> > > {'id': 2, 'username': 'jonwatts', 'email': 'jon@example.com'}
-> > >
-> > > print UserSerializer(user, fields=('id', 'email'))
-> > > {'id': 2, 'email': 'jon@example.com'}
-> > > Third party packages
-> > > 다양한 third party packages - 이런것들이 있다는 것만 알고 나중에 필요할 때 찾아서 사용하면 될듯
 
-Django REST marshmallow
 
-The django-rest-marshmallow package provides an alternative implementation for serializers, using the python marshmallow library. It exposes the same API as the REST framework serializers, and can be used as a drop-in replacement in some use-cases.
+# [Third party packages](http://www.django-rest-framework.org/api-guide/serializers/#third-party-packages)
 
-Serpy
+> 이런것들이 있다 정도만 알아놓고 필요할 때 찾아서 사용하면 될듯
 
-The serpy package is an alternative implementation for serializers that is built for speed. Serpy serializes complex datatypes to simple native types. The native types can be easily converted to JSON or any other format needed.
+## [Django REST marshmallow](http://www.django-rest-framework.org/api-guide/serializers/#django-rest-marshmallow)
 
-MongoengineModelSerializer
+The [django-rest-marshmallow](http://tomchristie.github.io/django-rest-marshmallow/) package provides an alternative implementation for serializers, using the python [marshmallow](https://marshmallow.readthedocs.io/en/latest/) library. It exposes the same API as the REST framework serializers, and can be used as a drop-in replacement in some use-cases.
 
-The django-rest-framework-mongoengine package provides a MongoEngineModelSerializer serializer class that supports using MongoDB as the storage layer for Django REST framework.
+## [Serpy](http://www.django-rest-framework.org/api-guide/serializers/#serpy)
 
-GeoFeatureModelSerializer
+The [serpy](https://github.com/clarkduvall/serpy) package is an alternative implementation for serializers that is built for speed. [Serpy](https://github.com/clarkduvall/serpy) serializes complex datatypes to simple native types. The native types can be easily converted to JSON or any other format needed.
 
-The django-rest-framework-gis package provides a GeoFeatureModelSerializer serializer class that supports GeoJSON both for read and write operations.
+## [MongoengineModelSerializer](http://www.django-rest-framework.org/api-guide/serializers/#mongoenginemodelserializer)
 
-HStoreSerializer
+The [django-rest-framework-mongoengine](https://github.com/umutbozkurt/django-rest-framework-mongoengine) package provides a `MongoEngineModelSerializer` serializer class that supports using MongoDB as the storage layer for Django REST framework.
 
-The django-rest-framework-hstore package provides an HStoreSerializer to support django-hstore DictionaryField model field and its schema-mode feature.
+## [GeoFeatureModelSerializer](http://www.django-rest-framework.org/api-guide/serializers/#geofeaturemodelserializer)
 
-Dynamic REST
+The [django-rest-framework-gis](https://github.com/djangonauts/django-rest-framework-gis) package provides a `GeoFeatureModelSerializer` serializer class that supports GeoJSON both for read and write operations.
 
-The dynamic-rest package extends the ModelSerializer and ModelViewSet interfaces, adding API query parameters for filtering, sorting, and including / excluding all fields and relationships defined by your serializers.
+## [HStoreSerializer](http://www.django-rest-framework.org/api-guide/serializers/#hstoreserializer)
 
-Dynamic Fields Mixin
+The [django-rest-framework-hstore](https://github.com/djangonauts/django-rest-framework-hstore) package provides an `HStoreSerializer` to support [django-hstore](https://github.com/djangonauts/django-hstore) `DictionaryField` model field and its `schema-mode` feature.
 
-The drf-dynamic-fields package provides a mixin to dynamically limit the fields per serializer to a subset specified by an URL parameter.
+## [Dynamic REST](http://www.django-rest-framework.org/api-guide/serializers/#dynamic-rest)
 
-DRF FlexFields
+The [dynamic-rest](https://github.com/AltSchool/dynamic-rest) package extends the ModelSerializer and ModelViewSet interfaces, adding API query parameters for filtering, sorting, and including / excluding all fields and relationships defined by your serializers.
 
-The drf-flex-fields package extends the ModelSerializer and ModelViewSet to provide commonly used functionality for dynamically setting fields and expanding primitive fields to nested models, both from URL parameters and your serializer class definitions.
+## [Dynamic Fields Mixin](http://www.django-rest-framework.org/api-guide/serializers/#dynamic-fields-mixin)
 
-Serializer Extensions
+The [drf-dynamic-fields](https://github.com/dbrgn/drf-dynamic-fields) package provides a mixin to dynamically limit the fields per serializer to a subset specified by an URL parameter.
 
-The django-rest-framework-serializer-extensions package provides a collection of tools to DRY up your serializers, by allowing fields to be defined on a per-view/request basis. Fields can be whitelisted, blacklisted and child serializers can be optionally expanded.
+## [DRF FlexFields](http://www.django-rest-framework.org/api-guide/serializers/#drf-flexfields)
 
-HTML JSON Forms
+The [drf-flex-fields](https://github.com/rsinger86/drf-flex-fields) package extends the ModelSerializer and ModelViewSet to provide commonly used functionality for dynamically setting fields and expanding primitive fields to nested models, both from URL parameters and your serializer class definitions.
 
-The html-json-forms package provides an algorithm and serializer for processing <form>submissions per the (inactive) HTML JSON Form specification. The serializer facilitates processing of arbitrarily nested JSON structures within HTML. For example, <input name="items[0][id]" value="5"> will be interpreted as {"items": [{"id": "5"}]}.
+## [Serializer Extensions](http://www.django-rest-framework.org/api-guide/serializers/#serializer-extensions)
 
-DRF-Base64
+The [django-rest-framework-serializer-extensions](https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions) package provides a collection of tools to DRY up your serializers, by allowing fields to be defined on a per-view/request basis. Fields can be whitelisted, blacklisted and child serializers can be optionally expanded.
 
-DRF-Base64 provides a set of field and model serializers that handles the upload of base64-encoded files.
+## [HTML JSON Forms](http://www.django-rest-framework.org/api-guide/serializers/#html-json-forms)
 
-QueryFields
+The [html-json-forms](https://github.com/wq/html-json-forms) package provides an algorithm and serializer for processing `<form>`submissions per the (inactive) [HTML JSON Form specification](https://www.w3.org/TR/html-json-forms/). The serializer facilitates processing of arbitrarily nested JSON structures within HTML. For example, `<input name="items[0][id]" value="5">` will be interpreted as `{"items": [{"id": "5"}]}`.
 
-djangorestframework-queryfields allows API clients to specify which fields will be sent in the response via inclusion/exclusion query parameters.
+## [DRF-Base64](http://www.django-rest-framework.org/api-guide/serializers/#drf-base64)
 
-DRF Writable Nested
+[DRF-Base64](https://bitbucket.org/levit_scs/drf_base64) provides a set of field and model serializers that handles the upload of base64-encoded files.
 
-The drf-writable-nested package provides writable nested model serializer which allows to create/update models with nested related data.
+## [QueryFields](http://www.django-rest-framework.org/api-guide/serializers/#queryfields)
+
+[djangorestframework-queryfields](http://djangorestframework-queryfields.readthedocs.io/) allows API clients to specify which fields will be sent in the response via inclusion/exclusion query parameters.
+
+## [DRF Writable Nested](http://www.django-rest-framework.org/api-guide/serializers/#drf-writable-nested)
+
+The [drf-writable-nested](http://github.com/beda-software/drf-writable-nested) package provides writable nested model serializer which allows to create/update models with nested related data.
